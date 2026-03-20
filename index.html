@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clarkson University — Campus Safety Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #006747;
+    --green-dark: #00442E;
+    --gold: #C8A951;
+    --dark: #0d1117;
+    --surface: #161b22;
+    --surface2: #1e2530;
+    --surface3: #242d3a;
+    --border: #2a3341;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --correct: #2ea043;
+    --wrong: #da3633;
+    --correct-bg: #0d2818;
+    --wrong-bg: #2d0f0f;
+    --pass-green: #C6EFCE;
+    --pass-text: #276221;
+    --fail-red: #FFC7CE;
+    --fail-text: #9C0006;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--dark); color: var(--text); font-family: 'Barlow', sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--green);
+    padding: 0 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px;
+    border-bottom: 3px solid var(--gold);
+    position: sticky; top: 0; z-index: 100;
+    flex-shrink: 0;
+  }
+  .logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 1.3rem; letter-spacing: 0.04em; text-transform: uppercase; color: #fff; line-height: 1.1; }
+  .logo span { color: var(--gold); }
+  .header-badge { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff; font-family: 'Barlow Condensed', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; }
+  .admin-badge { background: var(--gold); color: var(--dark); font-family: 'Barlow Condensed', sans-serif; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; display: none; }
+  .btn-logout { background: transparent; border: 1px solid rgba(255,255,255,0.3); color: rgba(255,255,255,0.8); font-family: 'Barlow Condensed', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 12px; border-radius: 20px; cursor: pointer; transition: all 0.2s; display: none; }
+  .btn-logout:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+  main { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding: 2rem 1rem; }
+
+  /* ── CARD ── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 2.5rem; width: 100%; max-width: 700px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+
+  /* ── LOGIN ── */
+  #login-screen h1 { font-family: 'Barlow Condensed', sans-serif; font-size: 2.4rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; line-height: 1.1; margin-bottom: 0.4rem; }
+  #login-screen h1 span { color: var(--gold); }
+  #login-screen p { color: var(--muted); margin-bottom: 2rem; font-size: 0.95rem; }
+  .form-group { margin-bottom: 1.25rem; }
+  .form-group label { display: block; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+  .form-group input { width: 100%; background: var(--dark); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'Barlow', sans-serif; font-size: 1.1rem; padding: 0.75rem 1rem; outline: none; transition: border-color 0.2s; }
+  .form-group input:focus { border-color: var(--green); }
+  .btn-primary { width: 100%; background: var(--green); color: #fff; font-family: 'Barlow Condensed', sans-serif; font-size: 1.1rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; border: none; border-radius: 8px; padding: 0.85rem; cursor: pointer; transition: background 0.2s, transform 0.1s; margin-top: 0.5rem; }
+  .btn-primary:hover { background: #00804f; }
+  .btn-primary:active { transform: scale(0.98); }
+  .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border); }
+  .info-item { text-align: center; }
+  .info-item .num { font-family: 'Barlow Condensed', sans-serif; font-size: 2rem; font-weight: 800; color: var(--gold); }
+  .info-item .lbl { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+
+  /* ── QUIZ ── */
+  #quiz-screen { display: none; }
+  .quiz-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+  .quiz-meta .officer-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1rem; color: var(--gold); text-transform: uppercase; letter-spacing: 0.06em; }
+  .progress-text { font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 0.9rem; color: var(--muted); letter-spacing: 0.04em; }
+  .progress-bar { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 2rem; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--green), var(--gold)); border-radius: 2px; transition: width 0.3s ease; }
+  .category-tag { display: inline-block; font-family: 'Barlow Condensed', sans-serif; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 10px; border-radius: 4px; margin-bottom: 1rem; }
+  .cat-protocol { background: rgba(0,103,71,0.3); color: #4ade80; border: 1px solid rgba(74,222,128,0.3); }
+  .cat-address  { background: rgba(200,169,81,0.2); color: var(--gold); border: 1px solid rgba(200,169,81,0.3); }
+  .cat-keys     { background: rgba(56,139,253,0.15); color: #79c0ff; border: 1px solid rgba(56,139,253,0.3); }
+  .cat-procedure{ background: rgba(210,73,57,0.2); color: #ff7b72; border: 1px solid rgba(255,123,114,0.3); }
+  .cat-contacts { background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid rgba(192,132,252,0.3); }
+  .question-text { font-family: 'Barlow', sans-serif; font-size: 1.15rem; font-weight: 600; line-height: 1.5; margin-bottom: 1.5rem; color: var(--text); }
+  .choices { display: flex; flex-direction: column; gap: 0.65rem; }
+  .choice-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'Barlow', sans-serif; font-size: 0.95rem; font-weight: 500; padding: 0.85rem 1.1rem; text-align: left; cursor: pointer; transition: border-color 0.15s, background 0.15s; display: flex; align-items: center; gap: 0.75rem; }
+  .choice-btn:hover:not(:disabled) { border-color: var(--green); background: rgba(0,103,71,0.1); }
+  .choice-letter { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.85rem; color: var(--muted); min-width: 20px; }
+  .choice-btn.correct { border-color: var(--correct); background: var(--correct-bg); }
+  .choice-btn.wrong   { border-color: var(--wrong);   background: var(--wrong-bg); }
+  .choice-btn:disabled { cursor: default; }
+  .nav-row { display: flex; justify-content: flex-end; margin-top: 1.5rem; }
+  .btn-next { background: var(--green); color: #fff; font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; border: none; border-radius: 8px; padding: 0.65rem 1.5rem; cursor: pointer; transition: background 0.2s; }
+  .btn-next:hover { background: #00804f; }
+  .btn-next:disabled { background: var(--border); color: var(--muted); cursor: default; }
+
+  /* ── RESULTS ── */
+  #results-screen { display: none; }
+  .score-hero { text-align: center; padding: 1.5rem 0 2rem; }
+  .score-circle { width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--gold); display: flex; align-items: center; justify-content: center; flex-direction: column; margin: 0 auto 1rem; }
+  .score-circle .big-num { font-family: 'Barlow Condensed', sans-serif; font-size: 2.8rem; font-weight: 800; line-height: 1; }
+  .score-circle .big-denom { font-size: 0.9rem; color: var(--muted); }
+  .score-label { font-family: 'Barlow Condensed', sans-serif; font-size: 1.4rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+  .score-pct { font-size: 0.95rem; color: var(--muted); margin-top: 0.25rem; }
+  .pass { color: var(--correct); border-color: var(--correct); }
+  .fail { color: var(--wrong);   border-color: var(--wrong); }
+  .results-divider { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+  .results-list { display: flex; flex-direction: column; gap: 0.85rem; max-height: 420px; overflow-y: auto; padding-right: 4px; }
+  .result-item { background: var(--surface2); border-radius: 8px; padding: 0.9rem 1rem; border-left: 4px solid transparent; }
+  .result-item.r-correct { border-left-color: var(--correct); }
+  .result-item.r-wrong   { border-left-color: var(--wrong); }
+  .result-item .r-q { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.35rem; }
+  .result-item .r-your { font-size: 0.83rem; color: var(--muted); }
+  .result-item .r-correct-ans { font-size: 0.83rem; color: #4ade80; margin-top: 2px; }
+  .btn-retry { width: 100%; margin-top: 1.5rem; background: transparent; border: 1px solid var(--green); color: var(--green); font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 8px; padding: 0.75rem; cursor: pointer; transition: background 0.2s, color 0.2s; }
+  .btn-retry:hover { background: var(--green); color: #fff; }
+  .submit-status { font-size: 0.8rem; color: var(--muted); text-align: center; margin-top: 0.75rem; }
+  .submit-status.ok  { color: var(--correct); }
+  .submit-status.err { color: var(--wrong); }
+
+  /* ── ADMIN ── */
+  #admin-screen { display: none; width: 100%; max-width: 1100px; }
+  .admin-layout { display: flex; gap: 1.5rem; align-items: flex-start; }
+  .admin-sidebar { width: 200px; flex-shrink: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 0; }
+  .sidebar-label { font-family: 'Barlow Condensed', sans-serif; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); padding: 0 1.25rem; margin-bottom: 0.5rem; }
+  .nav-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.65rem 1.25rem; font-size: 0.9rem; font-weight: 500; color: var(--muted); cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; }
+  .nav-item:hover { color: var(--text); background: var(--surface2); }
+  .nav-item.active { color: var(--text); border-left-color: var(--gold); background: var(--surface2); }
+  .admin-main { flex: 1; min-width: 0; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .panel-header { margin-bottom: 1.5rem; }
+  .panel-header h2 { font-family: 'Barlow Condensed', sans-serif; font-size: 1.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
+  .panel-header p { color: var(--muted); font-size: 0.9rem; margin-top: 0.25rem; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; }
+  .stat-card .s-num { font-family: 'Barlow Condensed', sans-serif; font-size: 2.2rem; font-weight: 800; line-height: 1; color: var(--gold); }
+  .stat-card .s-lbl { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 0.35rem; }
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: var(--surface2); }
+  th { font-family: 'Barlow Condensed', sans-serif; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 0.75rem 1rem; font-size: 0.88rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+  .badge-pass { background: rgba(46,160,67,0.2); color: #4ade80; border: 1px solid rgba(74,222,128,0.3); font-family: 'Barlow Condensed', sans-serif; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+  .badge-fail { background: rgba(218,54,51,0.2); color: #ff7b72; border: 1px solid rgba(255,123,114,0.3); font-family: 'Barlow Condensed', sans-serif; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+  .empty-state .big { font-size: 2.5rem; margin-bottom: 0.5rem; }
+  .missed-bar-wrap { display: flex; align-items: center; gap: 0.75rem; }
+  .missed-bar-bg { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; min-width: 60px; }
+  .missed-bar-fill { height: 100%; background: var(--wrong); border-radius: 3px; }
+  .missed-count { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.9rem; color: #ff7b72; min-width: 24px; text-align: right; }
+  .qpool-filters { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  .filter-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); font-family: 'Barlow Condensed', sans-serif; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 14px; border-radius: 20px; cursor: pointer; transition: all 0.15s; }
+  .filter-btn:hover { border-color: var(--green); color: var(--text); }
+  .filter-btn.active { background: var(--green); border-color: var(--green); color: #fff; }
+  .q-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; border-left: 4px solid transparent; transition: border-left-color 0.15s; }
+  .q-card:hover { border-left-color: var(--gold); }
+  .q-card .q-cat { font-family: 'Barlow Condensed', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.35rem; }
+  .q-card .q-text { font-size: 0.92rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .q-card .q-choices { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .q-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; font-size: 0.78rem; color: var(--muted); }
+  .q-chip.answer-chip { background: rgba(46,160,67,0.15); border-color: rgba(74,222,128,0.3); color: #4ade80; font-weight: 600; }
+  .refresh-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .btn-refresh { background: transparent; border: 1px solid var(--border); color: var(--muted); font-family: 'Barlow Condensed', sans-serif; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 14px; border-radius: 6px; cursor: pointer; transition: all 0.15s; }
+  .btn-refresh:hover { border-color: var(--green); color: var(--text); }
+  .wrong-qs-cell { max-width: 260px; font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+
+  .setup-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; margin-bottom: 1rem; }
+  .setup-card h3 { font-family: 'Barlow Condensed', sans-serif; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.75rem; color: var(--gold); }
+  .setup-card p { font-size: 0.9rem; color: var(--muted); line-height: 1.6; margin-bottom: 0.5rem; }
+  .setup-card ol { padding-left: 1.25rem; color: var(--muted); font-size: 0.9rem; line-height: 2.2; }
+  .setup-card code { background: var(--surface2); border: 1px solid var(--border); padding: 1px 6px; border-radius: 4px; font-family: monospace; font-size: 0.85em; color: var(--gold); }
+  .code-block { background: var(--dark); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin: 0.75rem 0; font-family: monospace; font-size: 0.82rem; color: #79c0ff; white-space: pre-wrap; word-break: break-all; line-height: 1.6; }
+
+  .config-banner { background: rgba(200,169,81,0.1); border: 1px solid rgba(200,169,81,0.3); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: flex-start; gap: 0.75rem; }
+  .config-banner p { font-size: 0.88rem; color: var(--gold); line-height: 1.5; }
+
+  footer { text-align: center; padding: 1rem; font-size: 0.75rem; color: var(--muted); border-top: 1px solid var(--border); flex-shrink: 0; }
+
+  @media (max-width: 700px) {
+    .admin-layout { flex-direction: column; }
+    .admin-sidebar { width: 100%; }
+    .card { padding: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Clarkson <span>University</span><br>Campus Safety & Security</div>
+  <div style="display:flex;align-items:center;gap:0.75rem">
+    <span class="header-badge" id="hdr-quiz-badge">Officer Training</span>
+    <span class="admin-badge" id="hdr-admin-badge">Admin</span>
+    <button class="btn-logout" id="hdr-logout" onclick="exitAdmin()">← Back to Quiz</button>
+  </div>
+</header>
+
+<main id="main-wrap">
+
+  <!-- ── LOGIN ── -->
+  <div class="card" id="login-screen">
+    <h1>Knowledge<br><span>Assessment</span></h1>
+    <p>Enter your last name to begin the quiz. Results are recorded for training purposes.</p>
+    <div class="form-group">
+      <label>Last Name</label>
+      <input type="text" id="last-name-input" placeholder="e.g. Smith" autocomplete="off" />
+    </div>
+    <button class="btn-primary" onclick="handleStart()">Begin Assessment</button>
+    <div class="info-grid">
+      <div class="info-item"><div class="num">20</div><div class="lbl">Questions</div></div>
+      <div class="info-item"><div class="num">80</div><div class="lbl">Pool Size</div></div>
+      <div class="info-item"><div class="num">70%</div><div class="lbl">To Pass</div></div>
+    </div>
+  </div>
+
+  <!-- ── QUIZ ── -->
+  <div class="card" id="quiz-screen">
+    <div class="quiz-meta">
+      <span class="officer-name" id="officer-display"></span>
+      <span class="progress-text" id="progress-display">1 / 20</span>
+    </div>
+    <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill" style="width:5%"></div></div>
+    <span class="category-tag" id="cat-tag"></span>
+    <div class="question-text" id="question-text"></div>
+    <div class="choices" id="choices-container"></div>
+    <div class="nav-row">
+      <button class="btn-next" id="next-btn" onclick="nextQuestion()" disabled>Next →</button>
+    </div>
+  </div>
+
+  <!-- ── RESULTS ── -->
+  <div class="card" id="results-screen">
+    <div class="score-hero">
+      <div class="score-circle" id="score-circle">
+        <span class="big-num" id="score-num"></span>
+        <span class="big-denom" id="score-denom"></span>
+      </div>
+      <div class="score-label" id="score-label"></div>
+      <div class="score-pct" id="score-pct"></div>
+    </div>
+    <hr class="results-divider">
+    <div class="results-list" id="results-list"></div>
+    <button class="btn-retry" onclick="resetQuiz()">↩ Take Again</button>
+    <div class="submit-status" id="submit-status"></div>
+  </div>
+
+  <!-- ── ADMIN ── -->
+  <div id="admin-screen">
+    <div class="admin-layout">
+      <nav class="admin-sidebar">
+        <div class="sidebar-label">Dashboard</div>
+        <div class="nav-item active" onclick="showPanel('overview')"  id="nav-overview"> <span>📊</span> Overview</div>
+        <div class="nav-item"        onclick="showPanel('attempts')"  id="nav-attempts"> <span>📋</span> All Attempts</div>
+        <div class="nav-item"        onclick="showPanel('missed')"    id="nav-missed">   <span>❌</span> Missed Qs</div>
+        <div class="nav-item"        onclick="showPanel('pool')"      id="nav-pool">     <span>📚</span> Question Pool</div>
+        <div class="nav-item"        onclick="showPanel('setup')"     id="nav-setup">    <span>⚙️</span> Setup</div>
+      </nav>
+      <div class="admin-main">
+
+        <div class="config-banner" id="config-banner">
+          <span>⚠️</span>
+          <p>Google Sheets not yet connected — live data unavailable. See <strong>Setup</strong> tab to connect. Question Pool works without setup.</p>
+        </div>
+
+        <!-- OVERVIEW -->
+        <div class="panel active" id="panel-overview">
+          <div class="panel-header"><h2>Overview</h2><p>Summary stats across all quiz attempts.</p></div>
+          <div class="stats-grid">
+            <div class="stat-card"><div class="s-num" id="stat-total">—</div><div class="s-lbl">Total Attempts</div></div>
+            <div class="stat-card"><div class="s-num" id="stat-avg">—</div><div class="s-lbl">Avg Score</div></div>
+            <div class="stat-card"><div class="s-num" id="stat-pass">—</div><div class="s-lbl">Pass Rate</div></div>
+            <div class="stat-card"><div class="s-num" id="stat-unique">—</div><div class="s-lbl">Unique Officers</div></div>
+          </div>
+          <div class="table-wrap" id="recent-table-wrap">
+            <div class="empty-state"><div class="big">📭</div><p>No data yet. Connect Google Sheets to see attempts.</p></div>
+          </div>
+        </div>
+
+        <!-- ATTEMPTS -->
+        <div class="panel" id="panel-attempts">
+          <div class="panel-header"><h2>All Attempts</h2><p>Full log of every quiz submission.</p></div>
+          <div class="refresh-row">
+            <span style="font-size:0.85rem;color:var(--muted)" id="attempts-meta">—</span>
+            <button class="btn-refresh" onclick="loadSheetData()">↻ Refresh</button>
+          </div>
+          <div class="table-wrap" id="attempts-table-wrap">
+            <div class="empty-state"><div class="big">📭</div><p>No data yet.</p></div>
+          </div>
+        </div>
+
+        <!-- MISSED -->
+        <div class="panel" id="panel-missed">
+          <div class="panel-header"><h2>Missed Questions</h2><p>Most frequently missed — use to guide training focus.</p></div>
+          <div class="table-wrap" id="missed-table-wrap">
+            <div class="empty-state"><div class="big">✅</div><p>No missed question data yet.</p></div>
+          </div>
+        </div>
+
+        <!-- POOL -->
+        <div class="panel" id="panel-pool">
+          <div class="panel-header"><h2>Question Pool</h2><p>All 80 questions. Quiz draws 20 randomly each attempt.</p></div>
+          <div class="qpool-filters">
+            <button class="filter-btn active" onclick="filterPool('all',this)">All (80)</button>
+            <button class="filter-btn" onclick="filterPool('address',this)">Addresses</button>
+            <button class="filter-btn" onclick="filterPool('keys',this)">Keys</button>
+            <button class="filter-btn" onclick="filterPool('procedure',this)">Procedures</button>
+            <button class="filter-btn" onclick="filterPool('protocol',this)">Protocols</button>
+            <button class="filter-btn" onclick="filterPool('contacts',this)">Contacts</button>
+          </div>
+          <div id="pool-container"></div>
+        </div>
+
+        <!-- SETUP -->
+        <div class="panel" id="panel-setup">
+          <div class="panel-header"><h2>Setup Guide</h2><p>Connect Google Sheets so results save automatically.</p></div>
+          <div class="setup-card">
+            <h3>Step 1 — Create a Google Sheet</h3>
+            <p>Go to <strong>sheets.google.com</strong>, create a new blank sheet, name it <code>CSS Quiz Results</code>. In Row 1 add these headers exactly:</p>
+            <div class="code-block">Timestamp | Officer | Score | Total | Percent | Passed | WrongQuestions</div>
+          </div>
+          <div class="setup-card">
+            <h3>Step 2 — Create the Apps Script</h3>
+            <p>In your Sheet: <strong>Extensions → Apps Script</strong>. Replace all code with:</p>
+            <div class="code-block">function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+  sheet.appendRow([data.timestamp, data.officer, data.score,
+    data.total, data.percent + '%', data.passed, data.wrongQuestions]);
+  return ContentService.createTextOutput(JSON.stringify({status:'ok'}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+function doGet(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = sheet.getDataRange().getValues();
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}</div>
+          </div>
+          <div class="setup-card">
+            <h3>Step 3 — Deploy & Paste URL</h3>
+            <ol>
+              <li>Click <strong>Deploy → New deployment → Web app</strong></li>
+              <li>Execute as: <strong>Me</strong> | Who has access: <strong>Anyone</strong></li>
+              <li>Click <strong>Deploy</strong>, copy the Web App URL</li>
+              <li>Open <code>index.html</code>, find <code>GOOGLE_SCRIPT_URL</code> near the top of the script and paste your URL</li>
+              <li>Push to GitHub — done!</li>
+            </ol>
+          </div>
+        </div>
+
+      </div><!-- /admin-main -->
+    </div><!-- /admin-layout -->
+  </div><!-- /admin-screen -->
+
+</main>
+
+<footer>Clarkson University Campus Safety & Security — Training Quiz System</footer>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const GOOGLE_SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+const ADMIN_PASSWORD    = 'adklodge';
+
+// ─── FULL 80-QUESTION POOL ────────────────────────────────────────────────────
+const ALL_QUESTIONS = [
+
+  // ══ BUILDING ADDRESSES (18) ══════════════════════════════════════════════════
+  { category:'address', categoryLabel:'Building Addresses', catClass:'cat-address',
+    q:'What is the address of Clarkson Hall?',
+    choices:['56 Main','59 Main','65 Main','55 Main'], answer:'59 Main' },
+  { category:'address', categoryLabel:'Building Addresses', catClass:'cat-address',
+    q:'What is the address of Damon Hall?',
+    choices:['65 Main','66 Main','67 Main','56 Main'], answer:'67 Main' },
+  { category:'address', categoryLabel:'Building Addresses', catClass:'cat-address',
+    q:'What is the address of Congdon Hall?',
+    choices:['55 Main','51 Main','56 Main','59 Main'], answer:'56 Main' },
+  { category:'address', categoryLabel:'Building Addresses', catClass:'cat-address',
+    q:'What is the address of Peyton Hall?',
+    choices:['59 Main','56 Main','67 Main','65 Main'], answer:'65 Main' },
+  { category:'address', categoryLabel:'Building Addresses', catClass:'cat-address',
+    q:'What is the address of Old Main?',
+    choices:['51 Main','55 Main','56 Main','59 Main'], answer:'55 Main' },
+  { category:'address', categoryLabel:'Building Addresses', catClass:'cat-address',
+    q:'What is the address of Lewis House?',
+    choices:['49 Elm','51 Main','55 Main','43½ Market'], answer:'51 Main' },
+  { category:'address', categoryLabel:'Building Addresses', catClass:'cat-address',
+    q:'Where is the Facilities Building located?',
+    choices:['148 Maple','42 Maple','152 Maple','10 Pierrepont Ave'], answer:'42 Maple' },
+  { category:'address', categoryLabel:'Building Addresses', catClass:'cat-address',
+    q:'What is the address of Cheeseman House?',
+    choices:['42 Maple','152 Maple','148 Maple','10 Pierrepont Ave'], answer:'148 Maple' },
+  { category:'address', categoryLabel:'Building Addresses', catClass:'cat-address',
+    q:"What is the address of Engel's Garage?",
+    choices:['148 Maple','42 Maple','152 Maple','49 Elm'], answer:'152 Maple' },
+  { category:'address', categoryLabel:'Building Addresses', catClass:'cat-address',
+    q:'What is the address of Liberal Studies?',
+    choices:['49 Elm','42 Maple','10 Pierrepont Ave','43½ Market'], answer:'10 Pierrepont Ave' },
+  { category:'address', categoryLabel:'Building Addresses', catClass:'cat-address',
+    q:'What is the address of Trinity House?',
+    choices:['43½ Market','10 Pierrepont Ave','49 Elm','51 Main'], answer:'49 Elm' },
+  { category:'address', categoryLabel:'Building Addresses', catClass:'cat-address',
+    q:'What is the address of Weston Apartments?',
+    choices:['51 Main','43½ Market','49 Elm','56 Main'], answer:'43½ Market' },
+  { category:'address', categoryLabel:'Building Addresses', catClass:'cat-address',
+    q:'What is the address of Craig House 1?',
+    choices:['65 Main','66 Main','66½ Main','67 Main'], answer:'66 Main' },
+  { category:'address', categoryLabel:'Building Addresses', catClass:'cat-address',
+    q:'What is the address of Craig House 2?',
+    choices:['66 Main','66½ Main','67 Main','65 Main'], answer:'66½ Main' },
+  { category:'address', categoryLabel:'Building Addresses', catClass:'cat-address',
+    q:'Which building is located at 56 Main Street?',
+    choices:['Clarkson Hall','Old Main','Congdon Hall','Peyton Hall'], answer:'Congdon Hall' },
+  { category:'address', categoryLabel:'Building Addresses', catClass:'cat-address',
+    q:'Which building is located at 55 Main Street?',
+    choices:['Lewis House','Old Main','Congdon Hall','Clarkson Hall'], answer:'Old Main' },
+  { category:'address', categoryLabel:'Building Addresses', catClass:'cat-address',
+    q:'Which building is located at 65 Main Street?',
+    choices:['Damon Hall','Clarkson Hall','Craig House 1','Peyton Hall'], answer:'Peyton Hall' },
+  { category:'address', categoryLabel:'Building Addresses', catClass:'cat-address',
+    q:'Which street is Liberal Studies located on?',
+    choices:['Main Street','Maple Street','Elm Street','Pierrepont Ave'], answer:'Pierrepont Ave' },
+
+  // ══ KEY SYSTEM (16) ══════════════════════════════════════════════════════════
+  { category:'keys', categoryLabel:'Key System', catClass:'cat-keys',
+    q:'What is the BEST key number for the Campus Safety Door?',
+    choices:['GM','X2','GM1','GM2'], answer:'X2' },
+  { category:'keys', categoryLabel:'Key System', catClass:'cat-keys',
+    q:'Which key brand and number covers Dorm Rooms and various other locations?',
+    choices:['Sargent – D','BEST – GM','BEST – X2','Sargent – S'], answer:'BEST – GM' },
+  { category:'keys', categoryLabel:'Key System', catClass:'cat-keys',
+    q:'On the Downtown small ring, which key letter is best for Congdon Hall?',
+    choices:['K','L','B','M'], answer:'B' },
+  { category:'keys', categoryLabel:'Key System', catClass:'cat-keys',
+    q:'On the Downtown small ring, which key letter is best for Payton Hall?',
+    choices:['B','K','L','M'], answer:'K' },
+  { category:'keys', categoryLabel:'Key System', catClass:'cat-keys',
+    q:'On the Downtown small ring, which key letter and brand covers Liberal Studies?',
+    choices:['B Best','T Best','CB Russwin','L Best'], answer:'CB Russwin' },
+  { category:'keys', categoryLabel:'Key System', catClass:'cat-keys',
+    q:'On the Downtown small ring, which key letter is best for Lewis House?',
+    choices:['B','K','T','M'], answer:'T' },
+  { category:'keys', categoryLabel:'Key System', catClass:'cat-keys',
+    q:"What key is used for Clarkson Hall's Fire Panel Room and basement mechanical rooms?",
+    choices:['L Best, EM1','K Best','M Best','N Best'], answer:'L Best, EM1' },
+  { category:'keys', categoryLabel:'Key System', catClass:'cat-keys',
+    q:'On the Downtown small ring, which key letter is best for Old Main?',
+    choices:['L','N','M','K'], answer:'M' },
+  { category:'keys', categoryLabel:'Key System', catClass:'cat-keys',
+    q:'On the Downtown small ring, what key is used for Damon Hall and what does the front door lock use?',
+    choices:['N Best, LC Drives E Best','M Best, LC Drives F Best','L Best, EM1','K Best, LC Drives D Best'], answer:'N Best, LC Drives E Best' },
+  { category:'keys', categoryLabel:'Key System', catClass:'cat-keys',
+    q:'The Science Center uses which brand and key number?',
+    choices:['BEST – GM','Sargent – S','Sargent – J','Corbin Russwin – G'], answer:'Sargent – J' },
+  { category:'keys', categoryLabel:'Key System', catClass:'cat-keys',
+    q:'What brand and key number is used for CAMP?',
+    choices:['BEST – X2','Sargent – J','Sargent – S','Corbin Russwin – G'], answer:'Sargent – S' },
+  { category:'keys', categoryLabel:'Key System', catClass:'cat-keys',
+    q:'What brand and key number is used for Snell?',
+    choices:['Sargent – S','Sargent – J','Sargent – D','BEST – GM'], answer:'Sargent – D' },
+  { category:'keys', categoryLabel:'Key System', catClass:'cat-keys',
+    q:'What brand and key is used for Woodstock Lodge?',
+    choices:['Sargent – S','Sargent – MA','BEST – GM','Corbin Russwin – G'], answer:'Sargent – MA' },
+  { category:'keys', categoryLabel:'Key System', catClass:'cat-keys',
+    q:'What key is used for Graham Roof access?',
+    choices:['Sargent – S','BEST – X2','Sargent – MENG','Sargent – J'], answer:'Sargent – MENG' },
+  { category:'keys', categoryLabel:'Key System', catClass:'cat-keys',
+    q:'Holcroft uses which brand and key?',
+    choices:['BEST – GM','Sargent – S','Corbin Russwin – G','BEST – X2'], answer:'Corbin Russwin – G' },
+  { category:'keys', categoryLabel:'Key System', catClass:'cat-keys',
+    q:'Various Maintenance Rooms use which brand and key number?',
+    choices:['BEST – GM1','Sargent – MENG','BEST – X2','Sargent – S'], answer:'Sargent – MENG' },
+
+  // ══ PROCEDURES (16) ══════════════════════════════════════════════════════════
+  { category:'procedure', categoryLabel:'Procedures', catClass:'cat-procedure',
+    q:'When a bat is found on campus, who is responsible for capturing it?',
+    choices:['Campus Safety Officers','Facilities Grounds','St. Lawrence Public Health','The reporting student'], answer:'Facilities Grounds' },
+  { category:'procedure', categoryLabel:'Procedures', catClass:'cat-procedure',
+    q:'Under the bat protocol, when must a bat be captured and tested for rabies?',
+    choices:['Any time a bat is found indoors','Only if found in a classroom','If it came in contact with an individual or was in a sleeping area','Only if it bit someone'], answer:'If it came in contact with an individual or was in a sleeping area' },
+  { category:'procedure', categoryLabel:'Procedures', catClass:'cat-procedure',
+    q:'If a bat exposure occurs, who coordinates next steps with St. Lawrence Public Health?',
+    choices:['The Campus Safety Director','Facilities Grounds','Erica (EH&S)','Potsdam Police'], answer:'Erica (EH&S)' },
+  { category:'procedure', categoryLabel:'Procedures', catClass:'cat-procedure',
+    q:'When responding to a fire or smoke complaint and visible flames are present, who should you notify by text or call?',
+    choices:['Potsdam Fire Department','EH&S Manager','Campus Safety Director','CU Emergency Maintenance'], answer:'EH&S Manager' },
+  { category:'procedure', categoryLabel:'Procedures', catClass:'cat-procedure',
+    q:'What is the phone number to reach the EH&S Manager for fire/smoke complaints?',
+    choices:['315-769-3516','315-212-3006','265-6439','268-6633'], answer:'315-212-3006' },
+  { category:'procedure', categoryLabel:'Procedures', catClass:'cat-procedure',
+    q:'Per fire procedure, what must you do if equipment is involved in a fire before discarding it?',
+    choices:['Photograph the flames','Document the make, model, and serial number','Contact the manufacturer','Submit an incident report first'], answer:'Document the make, model, and serial number' },
+  { category:'procedure', categoryLabel:'Procedures', catClass:'cat-procedure',
+    q:'The state Campus Fire Report must be sent to EH&S for review before submission to which agency?',
+    choices:['FEMA','NYS OFPC','EPA','DEC'], answer:'NYS OFPC' },
+  { category:'procedure', categoryLabel:'Procedures', catClass:'cat-procedure',
+    q:'If EH&S does not respond within how many hours to the Campus Fire Report, you should submit it as-is?',
+    choices:['12 hours','24 hours','48 hours','72 hours'], answer:'24 hours' },
+  { category:'procedure', categoryLabel:'Procedures', catClass:'cat-procedure',
+    q:'Per medical emergency dispatch protocol, what should you do if no EMTs are responding within 5 minutes?',
+    choices:['Send another Active911 dispatch','Wait an additional 5 minutes','Call for PVRS','Contact the Dean of Students'], answer:'Call for PVRS' },
+  { category:'procedure', categoryLabel:'Procedures', catClass:'cat-procedure',
+    q:'What does the medical emergency protocol say you must NOT do if PVRS has been called?',
+    choices:['Contact the Area Coordinator','Page CUEMS via radio','Send another Active911 dispatch','Call Potsdam Rescue'], answer:'Send another Active911 dispatch' },
+  { category:'procedure', categoryLabel:'Procedures', catClass:'cat-procedure',
+    q:'When receiving a medical emergency call, which of the following should you collect from the caller?',
+    choices:["Caller's GPA and class schedule","Age/gender, nature of emergency, specific location, caller's name and callback number","Insurance information and next of kin",'Vehicle description and parking permit number'], answer:"Age/gender, nature of emergency, specific location, caller's name and callback number" },
+  { category:'procedure', categoryLabel:'Procedures', catClass:'cat-procedure',
+    q:'How do you page CUEMS during a medical emergency?',
+    choices:['Via Active911','Via Radio','Via campus phone extension','Via text message'], answer:'Via Radio' },
+  { category:'procedure', categoryLabel:'Procedures', catClass:'cat-procedure',
+    q:'What system do you use to send an alert during a medical emergency after paging CUEMS?',
+    choices:['Campus intercom','Active911','Text-a-tip','Emergency email blast'], answer:'Active911' },
+  { category:'procedure', categoryLabel:'Procedures', catClass:'cat-procedure',
+    q:'In the event of ANY unwanted fire — even one that has been extinguished — who must be notified immediately?',
+    choices:['EH&S Manager','Campus Safety Director','Local fire department','CU Emergency Maintenance'], answer:'Local fire department' },
+  { category:'procedure', categoryLabel:'Procedures', catClass:'cat-procedure',
+    q:'When a bat has been in a sleeping area, even with no direct contact, what must happen?',
+    choices:['File an incident report only','The bat must be captured and tested for rabies','Notify Potsdam Police','Spray the area with disinfectant'], answer:'The bat must be captured and tested for rabies' },
+  { category:'procedure', categoryLabel:'Procedures', catClass:'cat-procedure',
+    q:'What is the student ID number used for in a medical emergency call?',
+    choices:["To bill the student's account",'It is collected if available as part of caller/victim information','To access their medical records immediately','To notify their academic advisor'], answer:'It is collected if available as part of caller/victim information' },
+
+  // ══ EMERGENCY PROTOCOLS (18) ═════════════════════════════════════════════════
+  { category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol',
+    q:'When responding to an Assault call, which is a key dispatch question?',
+    choices:["What is the victim's GPA?",'Is the event in progress or a past event?','What building is the nearest dining hall?','Does the suspect have a student ID?'], answer:'Is the event in progress or a past event?' },
+  { category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol',
+    q:'During a Bomb Threat call, which of the following must you attempt to gather?',
+    choices:["The caller's social media handle",'The exact wording of the threat',"The caller's student GPA",'Whether the caller has a parking permit'], answer:'The exact wording of the threat' },
+  { category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol',
+    q:'For a Missing Student report, which offices does the notification chain reach after the Area Coordinator?',
+    choices:['Admissions and Registrar','Assoc. Dean Res. Life, Dean of Students, Safety & Security Director','Counseling Center only','Potsdam Police only'], answer:'Assoc. Dean Res. Life, Dean of Students, Safety & Security Director' },
+  { category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol',
+    q:'In a Sexual Assault case, notifying police is conditional on what?',
+    choices:['The time of day','Whether the suspect is a student','If the victim wishes','Always mandatory regardless'], answer:'If the victim wishes' },
+  { category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol',
+    q:'For a Fire Emergency call, what three things must be confirmed about the fire?',
+    choices:['Age of the building, insurance status, nearest hydrant','Building name, what is burning, and whether people are trapped',"Name of department head, floor plan, building owner",'Whether alarm was manual or automatic, evacuation status, wind direction'], answer:'Building name, what is burning, and whether people are trapped' },
+  { category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol',
+    q:'For a Larceny/Theft report, which question is on the dispatch checklist?',
+    choices:['Does the complainant have any suspicions?','Was the item insured?','What is the victim\'s GPA?','Was a camera nearby?'], answer:'Does the complainant have any suspicions?' },
+  { category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol',
+    q:'For an intoxicated student who is hospitalized, who is the first person the Safety & Security Officer notifies?',
+    choices:['Potsdam Police','Area Coordinator','Assoc. Dean Res. Life','The student\'s parents'], answer:'Area Coordinator' },
+  { category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol',
+    q:'For an intoxicated underage student who is hospitalized, who is additionally notified?',
+    choices:['Campus Counseling Center','Assoc. Dean Res. Life','Potsdam Police Department','The student\'s academic advisor'], answer:'Assoc. Dean Res. Life' },
+  { category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol',
+    q:'In a Suicide Threat or Attempt scenario, what happens if there is a medical emergency?',
+    choices:['Wait for counseling center to arrive','Activate Emergency Protocol','Notify parents immediately','Contact Media Relations'], answer:'Activate Emergency Protocol' },
+  { category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol',
+    q:'For a Student Death on Campus, what is the first action an officer takes?',
+    choices:['Notify media relations','Call the student\'s parents','Obtain information and secure the area','Dispatch an ambulance immediately'], answer:'Obtain information and secure the area' },
+  { category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol',
+    q:'When a Clarkson School student is involved in a death or suicide incident, who must be notified?',
+    choices:['The student\'s academic advisor','Clarkson School administration','The Registrar','Media Relations'], answer:'Clarkson School administration' },
+  { category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol',
+    q:'For a Sexual Assault case, what must the officer encourage the victim to do immediately?',
+    choices:['Call their parents','File a police report','Go to the Hospital or Health Services','Contact their RA'], answer:'Go to the Hospital or Health Services' },
+  { category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol',
+    q:'For a Missing Person call, which of the following is a dispatch checklist question?',
+    choices:['Check card usage (dorm access, vending, laundry, meals)','Review their class schedule','Contact their professors','Review parking violations'], answer:'Check card usage (dorm access, vending, laundry, meals)' },
+  { category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol',
+    q:'For a Maintenance Emergency involving a chemical or gas leak, who should be contacted to activate the ERT?',
+    choices:['Potsdam Police','Safety & Security Director','EH&S Manager','CU Emergency Maintenance'], answer:'Safety & Security Director' },
+  { category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol',
+    q:'For a Poisoning call, what key information must be gathered about the substance?',
+    choices:['Brand name and purchase location','What the poison is, the quantity, how it was taken, and how long ago','Whether the victim has insurance','The victim\'s allergies'], answer:'What the poison is, the quantity, how it was taken, and how long ago' },
+  { category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol',
+    q:'For an Auto Theft/Joyriding report, which is NOT a listed dispatch checklist question?',
+    choices:['Name of caller and contact information?','How was it taken? Was force used?','What was taken? What\'s the value?','What color is the suspect\'s hair?'], answer:"What color is the suspect's hair?" },
+  { category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol',
+    q:'For a Child Abandoned/Found call, which question is on the checklist?',
+    choices:['What school does the child attend?','Is this a runaway?','Who is their primary care physician?','What is the child\'s GPA?'], answer:'Is this a runaway?' },
+  { category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol',
+    q:'A Medical Emergency (General) call instructs officers to treat it how unless clearly otherwise?',
+    choices:['As a low-priority call','As an emergency','As a welfare check only','As a non-urgent situation'], answer:'As an emergency' },
+
+  // ══ CONTACTS & PHONE NUMBERS (12) ════════════════════════════════════════════
+  { category:'contacts', categoryLabel:'Contacts & Phone Numbers', catClass:'cat-contacts',
+    q:'What is the phone number for Potsdam Police / Potsdam Vol. Rescue?',
+    choices:['265-3311','268-6633','265-2121','265-6439'], answer:'265-2121' },
+  { category:'contacts', categoryLabel:'Contacts & Phone Numbers', catClass:'cat-contacts',
+    q:'What is the phone number for Potsdam Volunteer Fire?',
+    choices:['265-2121','265-3311','268-6633','265-6439'], answer:'265-3311' },
+  { category:'contacts', categoryLabel:'Contacts & Phone Numbers', catClass:'cat-contacts',
+    q:'What is the phone number for CU Student Health Services?',
+    choices:['265-2121','265-6439','268-6633','265-3311'], answer:'268-6633' },
+  { category:'contacts', categoryLabel:'Contacts & Phone Numbers', catClass:'cat-contacts',
+    q:'What is the phone number for CU Emergency Maintenance?',
+    choices:['268-6633','265-2121','265-6439','265-3311'], answer:'265-6439' },
+  { category:'contacts', categoryLabel:'Contacts & Phone Numbers', catClass:'cat-contacts',
+    q:'What is the phone number for St. Lawrence Gas?',
+    choices:['315-212-3006','315-769-3516','265-6439','265-3311'], answer:'315-769-3516' },
+  { category:'contacts', categoryLabel:'Contacts & Phone Numbers', catClass:'cat-contacts',
+    q:'For a maintenance emergency involving a chemical or gas hazard, who should be dispatched along with Safety & Security?',
+    choices:['NYS OFPC and EPA','PPD, Rescue, Fire, and Maintenance as necessary','Only CU Emergency Maintenance','Only Potsdam Police'], answer:'PPD, Rescue, Fire, and Maintenance as necessary' },
+  { category:'contacts', categoryLabel:'Contacts & Phone Numbers', catClass:'cat-contacts',
+    q:'What is the phone number for the EH&S Manager fire/smoke complaint line?',
+    choices:['265-2121','268-6633','265-6439','315-212-3006'], answer:'315-212-3006' },
+  { category:'contacts', categoryLabel:'Contacts & Phone Numbers', catClass:'cat-contacts',
+    q:'Which of the following is the correct number for CU Emergency Maintenance?',
+    choices:['265-2121','265-3311','268-6633','265-6439'], answer:'265-6439' },
+  { category:'contacts', categoryLabel:'Contacts & Phone Numbers', catClass:'cat-contacts',
+    q:'Which agency is St. Lawrence Gas contact Joe Gallagher associated with?',
+    choices:['CU Facilities','St. Lawrence Gas','Potsdam Fire','NYS OFPC'], answer:'St. Lawrence Gas' },
+  { category:'contacts', categoryLabel:'Contacts & Phone Numbers', catClass:'cat-contacts',
+    q:'For a Bomb Threat, which of these agencies is on the contact list?',
+    choices:['St. Lawrence Gas','Potsdam Police','CU Emergency Maintenance','NYS OFPC'], answer:'Potsdam Police' },
+  { category:'contacts', categoryLabel:'Contacts & Phone Numbers', catClass:'cat-contacts',
+    q:'For a Fire Emergency, which of the following is NOT typically on the contact list?',
+    choices:['Potsdam Vol. Fire','CU Emergency Maintenance','St. Lawrence Gas','CU Student Health Services'], answer:'St. Lawrence Gas' },
+  { category:'contacts', categoryLabel:'Contacts & Phone Numbers', catClass:'cat-contacts',
+    q:'CU Emergency Health Services shares the same phone number as which other contact?',
+    choices:['CU Emergency Maintenance','Potsdam Police','CU Student Health Services','Potsdam Vol. Fire'], answer:'CU Student Health Services' },
+];
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let officerName = '', questions = [], currentIndex = 0, answers = [], answered = false;
+let sheetData = [];
+
+// ─── ENTRY POINT ─────────────────────────────────────────────────────────────
+function handleStart() {
+  const input = document.getElementById('last-name-input').value.trim();
+  if (!input) { alert('Please enter your last name.'); return; }
+  if (input.toLowerCase() === ADMIN_PASSWORD) {
+    enterAdmin();
+  } else {
+    officerName = input.charAt(0).toUpperCase() + input.slice(1).toLowerCase();
+    startQuiz();
+  }
+}
+
+// ─── ADMIN ────────────────────────────────────────────────────────────────────
+function enterAdmin() {
+  hide('login-screen'); hide('quiz-screen'); hide('results-screen');
+  show('admin-screen');
+  document.getElementById('hdr-quiz-badge').style.display = 'none';
+  document.getElementById('hdr-admin-badge').style.display = 'inline';
+  document.getElementById('hdr-logout').style.display = 'inline';
+  document.getElementById('main-wrap').style.alignItems = 'flex-start';
+  renderPool('all');
+  loadSheetData();
+}
+
+function exitAdmin() {
+  hide('admin-screen');
+  show('login-screen');
+  document.getElementById('last-name-input').value = '';
+  document.getElementById('hdr-quiz-badge').style.display = 'inline';
+  document.getElementById('hdr-admin-badge').style.display = 'none';
+  document.getElementById('hdr-logout').style.display = 'none';
+  document.getElementById('main-wrap').style.alignItems = 'center';
+}
+
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  document.getElementById('nav-' + id).classList.add('active');
+}
+
+// ─── QUIZ ─────────────────────────────────────────────────────────────────────
+function startQuiz() {
+  questions = shuffle(ALL_QUESTIONS).slice(0, 20);
+  currentIndex = 0; answers = [];
+  document.getElementById('officer-display').textContent = 'Officer ' + officerName;
+  hide('login-screen'); show('quiz-screen');
+  renderQuestion();
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+function renderQuestion() {
+  const q = questions[currentIndex];
+  answered = false;
+  document.getElementById('progress-display').textContent = (currentIndex+1) + ' / ' + questions.length;
+  document.getElementById('progress-fill').style.width = ((currentIndex+1)/questions.length*100) + '%';
+  const tag = document.getElementById('cat-tag');
+  tag.textContent = q.categoryLabel; tag.className = 'category-tag ' + q.catClass;
+  document.getElementById('question-text').textContent = q.q;
+  const container = document.getElementById('choices-container');
+  container.innerHTML = '';
+  const letters = ['A','B','C','D'];
+  shuffle(q.choices).forEach((choice, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.innerHTML = `<span class="choice-letter">${letters[i]}</span>${choice}`;
+    btn.onclick = () => selectAnswer(choice, btn, q.answer);
+    container.appendChild(btn);
+  });
+  const nb = document.getElementById('next-btn');
+  nb.disabled = true;
+  nb.textContent = currentIndex === questions.length-1 ? 'Submit Results' : 'Next →';
+}
+
+function selectAnswer(choice, btn, correct) {
+  if (answered) return;
+  answered = true;
+  document.querySelectorAll('.choice-btn').forEach(b => {
+    b.disabled = true;
+    const text = b.textContent.slice(1).trim();
+    if (text === correct) b.classList.add('correct');
+    else if (b === btn && choice !== correct) b.classList.add('wrong');
+  });
+  answers.push({ q: questions[currentIndex], selected: choice, correct: choice === correct });
+  document.getElementById('next-btn').disabled = false;
+}
+
+function nextQuestion() {
+  if (!answered) return;
+  currentIndex++;
+  if (currentIndex < questions.length) renderQuestion();
+  else showResults();
+}
+
+function showResults() {
+  hide('quiz-screen'); show('results-screen');
+  const score = answers.filter(a => a.correct).length;
+  const total = answers.length;
+  const pct = Math.round(score/total*100);
+  const pass = pct >= 70;
+  const circle = document.getElementById('score-circle');
+  circle.className = 'score-circle ' + (pass ? 'pass' : 'fail');
+  document.getElementById('score-num').textContent = score;
+  document.getElementById('score-denom').textContent = '/ ' + total;
+  document.getElementById('score-label').textContent = pass ? '✓ Passed' : '✗ Not Passed';
+  document.getElementById('score-pct').textContent = pct + '% — ' + (pass ? 'Great work!' : 'Score 70% or higher to pass.');
+  const list = document.getElementById('results-list');
+  list.innerHTML = '';
+  answers.forEach((a, i) => {
+    const div = document.createElement('div');
+    div.className = 'result-item ' + (a.correct ? 'r-correct' : 'r-wrong');
+    div.innerHTML = `<div class="r-q">${i+1}. ${a.q.q}</div>
+      <div class="r-your">${a.correct ? '✓' : '✗'} Your answer: ${a.selected}</div>
+      ${!a.correct ? `<div class="r-correct-ans">✓ Correct: ${a.q.answer}</div>` : ''}`;
+    list.appendChild(div);
+  });
+  submitToSheets(score, total, pct, pass);
+}
+
+function resetQuiz() {
+  hide('results-screen');
+  show('login-screen');
+  document.getElementById('last-name-input').value = '';
+  document.getElementById('submit-status').textContent = '';
+}
+
+// ─── SHEETS SUBMIT ────────────────────────────────────────────────────────────
+function submitToSheets(score, total, pct, pass) {
+  if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+    const s = document.getElementById('submit-status');
+    s.textContent = '⚠ Google Sheets not configured — results not saved.';
+    s.className = 'submit-status err'; return;
+  }
+  const wrongQs = answers.filter(a => !a.correct).map(a => a.q.q).join(' | ');
+  const payload = { timestamp: new Date().toISOString(), officer: officerName, score, total, percent: pct, passed: pass ? 'YES' : 'NO', wrongQuestions: wrongQs };
+  const s = document.getElementById('submit-status');
+  s.textContent = 'Saving results…'; s.className = 'submit-status';
+  fetch(GOOGLE_SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+    .then(() => { s.textContent = '✓ Results saved.'; s.className = 'submit-status ok'; })
+    .catch(() => { s.textContent = '✗ Could not save results.'; s.className = 'submit-status err'; });
+}
+
+// ─── ADMIN SHEETS LOAD ────────────────────────────────────────────────────────
+async function loadSheetData() {
+  if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+    document.getElementById('config-banner').style.display = 'flex'; return;
+  }
+  document.getElementById('config-banner').style.display = 'none';
+  try {
+    const res = await fetch(GOOGLE_SCRIPT_URL);
+    const raw = await res.json();
+    sheetData = raw.length <= 1 ? [] : raw.slice(1).map(r => ({
+      timestamp: r[0], officer: r[1], score: r[2], total: r[3],
+      percent: r[4], passed: r[5], wrongQuestions: r[6]
+    }));
+    renderDashboard();
+  } catch(e) { console.error(e); }
+}
+
+function renderDashboard() {
+  const total = sheetData.length;
+  const passing = sheetData.filter(r => r.passed === 'YES').length;
+  const scores = sheetData.map(r => parseFloat(r.percent));
+  const avg = total ? Math.round(scores.reduce((a,b)=>a+b,0)/total) : 0;
+  const unique = [...new Set(sheetData.map(r => r.officer))].length;
+  document.getElementById('stat-total').textContent  = total  || '—';
+  document.getElementById('stat-avg').textContent    = total  ? avg+'%' : '—';
+  document.getElementById('stat-pass').textContent   = total  ? Math.round(passing/total*100)+'%' : '—';
+  document.getElementById('stat-unique').textContent = unique || '—';
+  renderAttemptsTable(sheetData);
+  renderMissedTable(sheetData);
+  document.getElementById('attempts-meta').textContent = total + ' total attempt' + (total!==1?'s':'');
+}
+
+function renderAttemptsTable(data) {
+  const wrap = document.getElementById('attempts-table-wrap');
+  const wrap2 = document.getElementById('recent-table-wrap');
+  if (!data.length) {
+    const e = '<div class="empty-state"><div class="big">📭</div><p>No data yet.</p></div>';
+    wrap.innerHTML = e; wrap2.innerHTML = e; return;
+  }
+  const tbl = `<table><thead><tr><th>Date/Time</th><th>Officer</th><th>Score</th><th>%</th><th>Result</th><th>Missed Questions</th></tr></thead><tbody>
+    ${[...data].reverse().map(r => `<tr>
+      <td>${fmtDate(r.timestamp)}</td>
+      <td><strong>${r.officer}</strong></td>
+      <td>${r.score} / ${r.total}</td>
+      <td>${r.percent}</td>
+      <td><span class="${r.passed==='YES'?'badge-pass':'badge-fail'}">${r.passed==='YES'?'Pass':'Fail'}</span></td>
+      <td class="wrong-qs-cell">${r.wrongQuestions ? r.wrongQuestions.split(' | ').map(q=>`<div>• ${q}</div>`).join('') : '—'}</td>
+    </tr>`).join('')}
+    </tbody></table>`;
+  wrap.innerHTML = tbl; wrap2.innerHTML = tbl;
+}
+
+function renderMissedTable(data) {
+  const wrap = document.getElementById('missed-table-wrap');
+  if (!data.length) { wrap.innerHTML = '<div class="empty-state"><div class="big">✅</div><p>No data yet.</p></div>'; return; }
+  const counts = {};
+  data.forEach(r => { if (r.wrongQuestions) r.wrongQuestions.split(' | ').forEach(q => { if(q.trim()) counts[q.trim()] = (counts[q.trim()]||0)+1; }); });
+  if (!Object.keys(counts).length) { wrap.innerHTML = '<div class="empty-state"><div class="big">✅</div><p>No missed questions yet.</p></div>'; return; }
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const max = sorted[0][1];
+  wrap.innerHTML = `<table><thead><tr><th>Question</th><th style="width:180px">Times Missed</th></tr></thead><tbody>
+    ${sorted.map(([q,c])=>`<tr><td>${q}</td><td><div class="missed-bar-wrap">
+      <div class="missed-bar-bg"><div class="missed-bar-fill" style="width:${c/max*100}%"></div></div>
+      <span class="missed-count">${c}</span></div></td></tr>`).join('')}
+    </tbody></table>`;
+}
+
+function filterPool(cat, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPool(cat);
+}
+
+function renderPool(cat) {
+  const filtered = cat === 'all' ? ALL_QUESTIONS : ALL_QUESTIONS.filter(q => q.category === cat);
+  document.getElementById('pool-container').innerHTML = filtered.map((q,i) => `
+    <div class="q-card">
+      <div class="q-cat">${q.categoryLabel}</div>
+      <div class="q-text">${i+1}. ${q.q}</div>
+      <div class="q-choices">
+        ${q.choices.map(c=>`<span class="q-chip ${c===q.answer?'answer-chip':''}">${c===q.answer?'✓ ':''}${c}</span>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function fmtDate(ts) {
+  if (!ts) return '—';
+  try { const d=new Date(ts); return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); }
+  catch { return ts; }
+}
+
+function show(id) { document.getElementById(id).style.display = id==='admin-screen'?'block':'flex'; }
+function hide(id) { document.getElementById(id).style.display = 'none'; }
+
+document.getElementById('last-name-input').addEventListener('keydown', e => { if(e.key==='Enter') handleStart(); });
+</script>
+</body>
+</html>
