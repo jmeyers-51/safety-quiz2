@@ -344,6 +344,7 @@
   .choice-btn.wrong   { border-color: var(--wrong);   background: var(--wrong-bg); }
   .choice-btn.wrong   .choice-letter { background: var(--wrong); color: #fff; border-color: var(--wrong); }
   .choice-btn:disabled { cursor: default; }
+  .choice-text { flex: 1; }
 
   .nav-row { display: flex; justify-content: flex-end; margin-top: 1.25rem; }
   .btn-next {
@@ -845,7 +846,7 @@ const ALL_QUESTIONS = [
   { id:'E13', category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol', q:'For a Missing Person call, which of the following is a dispatch checklist question?', choices:['Check card usage (dorm access, vending, laundry, meals)','Review their class schedule','Contact their professors','Review parking violations'], answer:'Check card usage (dorm access, vending, laundry, meals)' },
   { id:'E14', category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol', q:'For a Maintenance Emergency involving a chemical or gas leak, who should be contacted to activate the ERT?', choices:['Potsdam Police','Safety & Security Director','EH&S Manager','CU Emergency Maintenance'], answer:'Safety & Security Director' },
   { id:'E15', category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol', q:'For a Poisoning call, what key information must be gathered about the substance?', choices:['Brand name and purchase location','What the poison is, the quantity, how it was taken, and how long ago','Whether the victim has insurance',"The victim's allergies"], answer:'What the poison is, the quantity, how it was taken, and how long ago' },
-  { id:'E16', category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol', q:'For an Auto Theft/Joyriding report, which is NOT a listed dispatch checklist question?', choices:['Name of caller and contact information?','How was it taken? Was force used?',"What was taken? What's the value?",'What color is the suspects hair?'], answer:"What color is the suspect's hair?" },
+  { id:'E16', category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol', q:'For an Auto Theft/Joyriding report, which is NOT a listed dispatch checklist question?', choices:['Name of caller and contact information?','How was it taken? Was force used?',"What was taken? What's the value?",'What color is the suspect\'s hair?'], answer:"What color is the suspect's hair?" },
   { id:'E17', category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol', q:'For a Child Abandoned/Found call, which question is on the checklist?', choices:['What school does the child attend?','Is this a runaway?','Who is their primary care physician?',"What is the child's GPA?"], answer:'Is this a runaway?' },
   { id:'E18', category:'protocol', categoryLabel:'Emergency Protocols', catClass:'cat-protocol', q:'A Medical Emergency (General) call instructs officers to treat it how unless clearly otherwise?', choices:['As a low-priority call','As an emergency','As a welfare check only','As a non-urgent situation'], answer:'As an emergency' },
   // ══ CONTACTS & PHONE NUMBERS (12) ════════════════════════════════════════════
@@ -937,7 +938,8 @@ function renderQuestion() {
   shuffle(q.choices).forEach((choice, i) => {
     const btn = document.createElement('button');
     btn.className = 'choice-btn';
-    btn.innerHTML = `<span class="choice-letter">${letters[i]}</span>${choice}`;
+    btn.dataset.choice = choice;
+    btn.innerHTML = `<span class="choice-letter">${letters[i]}</span><span class="choice-text">${choice}</span>`;
     btn.onclick = () => selectAnswer(choice, btn, q.answer);
     container.appendChild(btn);
   });
@@ -951,8 +953,7 @@ function selectAnswer(choice, btn, correct) {
   answered = true;
   document.querySelectorAll('.choice-btn').forEach(b => {
     b.disabled = true;
-    const text = b.textContent.slice(1).trim();
-    if (text === correct) b.classList.add('correct');
+    if (b.dataset.choice === correct) b.classList.add('correct');
     else if (b === btn && choice !== correct) b.classList.add('wrong');
   });
   answers.push({ q: questions[currentIndex], selected: choice, correct: choice === correct });
