@@ -110,13 +110,16 @@
   }
   .btn-logout:hover { background: rgba(255,255,255,0.15); color: #fff; }
 
-  /* ── MAIN WRAPPER ── */
   main {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: clamp(1rem, 3vw, 2rem) clamp(1rem, 4vw, 2rem);
+  }
+  main.admin-active {
+    align-items: flex-start;
+    padding: 0;
   }
 
   /* ── QUIZ CARD ── */
@@ -415,10 +418,6 @@
     width: 100%;
     max-width: 1100px;
     padding: clamp(1rem, 3vw, 2rem);
-  }
-  main.admin-active {
-    align-items: flex-start;
-    padding: 0;
   }
   .admin-layout {
     display: flex;
@@ -1148,7 +1147,11 @@ function fmtDate(ts) {
   catch { return ts; }
 }
 
-function show(id) { document.getElementById(id).style.display = id==='admin-screen'?'block':'flex'; }
+function show(id) {
+  const el = document.getElementById(id);
+  if (id === 'admin-screen') { el.style.display = 'block'; }
+  else { el.style.display = 'block'; }
+}
 function hide(id) { document.getElementById(id).style.display = 'none'; }
 
 document.getElementById('last-name-input').addEventListener('keydown', e => { if(e.key==='Enter') handleStart(); });
