@@ -688,6 +688,23 @@
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
   .modal-choice.is-answer .modal-choice-letter { background: var(--correct); color: #fff; border-color: var(--correct); }
+  .modal-choice.is-chosen-wrong {
+    border-color: var(--wrong);
+    background: var(--wrong-bg);
+    color: #ff7b72;
+  }
+  .modal-choice.is-chosen-wrong .modal-choice-letter {
+    background: var(--wrong); color: #fff; border-color: var(--wrong);
+  }
+  .modal-tag {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; border-radius: 4px; padding: 2px 6px;
+    flex-shrink: 0; margin-left: auto;
+  }
+  .correct-tag { background: rgba(46,160,67,0.2); color: #4ade80; border: 1px solid rgba(74,222,128,0.3); }
+  .wrong-tag   { background: rgba(218,54,51,0.2);  color: #ff7b72; border: 1px solid rgba(255,123,114,0.3); }
+
   .modal-close {
     width: 100%; background: transparent; border: 1px solid var(--border);
     color: var(--muted); border-radius: 8px; padding: 0.65rem;
@@ -928,6 +945,10 @@ function doGet(e) {
     <div class="modal-q-id" id="modal-qid"></div>
     <div class="modal-q-text" id="modal-qtext"></div>
     <div class="modal-choices" id="modal-choices"></div>
+    <div id="modal-legend" style="display:none;gap:1rem;margin-bottom:1rem;font-size:0.78rem;color:var(--muted)">
+      <span><span style="color:#4ade80">✓</span> Correct answer</span>
+      <span><span style="color:#ff7b72">✗</span> What was selected</span>
+    </div>
     <button class="modal-close" onclick="closeQModal()">Close</button>
   </div>
 </div>
@@ -1095,7 +1116,11 @@ function showPanel(id) {
 function startQuiz() {
   questions = shuffle(ALL_QUESTIONS).slice(0, 20);
   currentIndex = 0; answers = [];
-  document.getElementById('officer-display').textContent = 'Officer ' + officerName;
+  const rosterEntry = OFFICER_ROSTER[officerName.toLowerCase()];
+  const displayLabel = rosterEntry
+    ? rosterEntry.role + ' ' + officerName
+    : officerName;
+  document.getElementById('officer-display').textContent = displayLabel;
   hide('login-screen'); show('quiz-screen');
   renderQuestion();
 }
@@ -1188,7 +1213,9 @@ function submitToSheets(score, total, pct, pass) {
     s.textContent = '⚠ Google Sheets not configured — results not saved.';
     s.className = 'submit-status err'; return;
   }
-  const wrongQs = answers.filter(a => !a.correct).map(a => a.q.id).join(',');
+  // Store as ID:chosenAnswer pairs so modal can show what was picked
+  const wrongQs = answers.filter(a => !a.correct)
+    .map(a => a.q.id + ':' + encodeURIComponent(a.selected)).join(',');
   const payload = { timestamp: new Date().toISOString(), officer: officerName, score, total, percent: pct, passed: pass ? 'YES' : 'NO', wrongQuestions: wrongQs };
   const s = document.getElementById('submit-status');
   s.textContent = 'Saving results…'; s.className = 'submit-status';
@@ -1315,8 +1342,8 @@ function renderCharts(data) {
     if (!r.wrongQuestions) return;
     const sep = r.wrongQuestions.includes(',') ? ',' : '|';
     r.wrongQuestions.split(sep).forEach(raw => {
-      const key = raw.trim();
-      const cat = qCatMap[key];
+      const { id } = parseWrongEntry(raw.trim());
+      const cat = qCatMap[id];
       if (cat && catCounts[cat] !== undefined) catCounts[cat]++;
     });
   });
@@ -1393,16 +1420,17 @@ function renderMissedTable(data) {
   // Build counts per ID, tracking which officers missed each
   const counts = {};
   const officers = {};
+  const chosenAnswers = {}; // id -> most common chosen answer
   data.forEach(r => {
     if (!r.wrongQuestions) return;
-    // support both old pipe-separated full text and new comma-separated IDs
     const sep = r.wrongQuestions.includes(',') ? ',' : '|';
     r.wrongQuestions.split(sep).forEach(raw => {
-      const key = raw.trim();
+      const { id: key, chosen } = parseWrongEntry(raw.trim());
       if (!key) return;
       counts[key] = (counts[key] || 0) + 1;
       if (!officers[key]) officers[key] = new Set();
       officers[key].add(r.officer ? r.officer.substring(0,3).toUpperCase() : '???');
+      if (chosen && !chosenAnswers[key]) chosenAnswers[key] = chosen; // store first seen
     });
   });
   if (!Object.keys(counts).length) { wrap.innerHTML = '<div class="empty-state"><div class="big">✅</div><p>No missed questions yet.</p></div>'; return; }
@@ -1424,9 +1452,10 @@ function renderMissedTable(data) {
         const initials = name.substring(0,3).toUpperCase();
         return `<span class="off-dot" style="background:${color}22;border-color:${color}55;color:${color}" title="${roster ? roster.name : name}">${initials}</span>`;
       }).join('');
+      const missedChosen = chosenAnswers[key] ? encodeURIComponent(chosenAnswers[key]) : '';
       return `<tr>
-        <td><span class="q-id-badge clickable-q" onclick="openQModal('${displayId}')">${displayId}</span></td>
-        <td style="font-size:0.82rem;line-height:1.4"><span class="clickable-q" onclick="openQModal('${displayId}')">${shortLabel}</span></td>
+        <td><span class="q-id-badge clickable-q" onclick="openQModal('${displayId}','${missedChosen}')">${displayId}</span></td>
+        <td style="font-size:0.82rem;line-height:1.4"><span class="clickable-q" onclick="openQModal('${displayId}','${missedChosen}')">${shortLabel}</span></td>
         <td style="white-space:nowrap">${dots}</td>
         <td><div class="missed-bar-wrap">
           <div class="missed-bar-bg"><div class="missed-bar-fill" style="width:${c/max*100}%"></div></div>
@@ -1462,13 +1491,32 @@ function fmtPct(val) {
   return (n <= 1 ? Math.round(n * 100) : Math.round(n)) + '%';
 }
 
+function parseWrongEntry(entry) {
+  // Supports: "A07:SomeAnswer", "A07", or legacy full-text
+  const colonIdx = entry.indexOf(':');
+  if (colonIdx > 0) {
+    const id = entry.substring(0, colonIdx);
+    const chosen = decodeURIComponent(entry.substring(colonIdx + 1));
+    return { id, chosen };
+  }
+  // legacy or plain id
+  return { id: entry, chosen: null };
+}
+
 function fmtWrongIds(wrongQs) {
   if (!wrongQs || !wrongQs.trim()) return '—';
   const sep = wrongQs.includes(',') ? ',' : '|';
-  const ids = wrongQs.split(sep).map(s => s.trim()).filter(Boolean);
+  const entries = wrongQs.split(sep).map(s => s.trim()).filter(Boolean);
   const labelMap = {};
   ALL_QUESTIONS.forEach(q => { labelMap[q.id] = q.label || ''; });
-  return ids.map(id => `<span class="q-id-badge clickable-q" title="${labelMap[id] || id}" onclick="openQModal('${id}')">${id}</span>`).join(' ');
+  return entries.map(entry => {
+    const { id, chosen } = parseWrongEntry(entry);
+    const isId = /^[A-Z][0-9]{2}$/.test(id);
+    const displayId = isId ? id : id.substring(0, 5);
+    const label = labelMap[id] || id;
+    const chosenParam = chosen ? encodeURIComponent(chosen) : '';
+    return `<span class="q-id-badge clickable-q" title="${label}" onclick="openQModal('${id}','${chosenParam}')">${displayId}</span>`;
+  }).join(' ');
 }
 
 function fmtDate(ts) {
@@ -1478,18 +1526,29 @@ function fmtDate(ts) {
 }
 
 // ─── QUESTION MODAL ──────────────────────────────────────────────────────────
-function openQModal(qid) {
+function openQModal(qid, chosenEncoded) {
   const q = ALL_QUESTIONS.find(x => x.id === qid);
   if (!q) return;
+  const chosen = chosenEncoded ? decodeURIComponent(chosenEncoded) : null;
   document.getElementById('modal-qid').textContent = q.id + ' — ' + q.categoryLabel;
   document.getElementById('modal-qtext').textContent = q.q;
   const letters = ['A','B','C','D'];
-  document.getElementById('modal-choices').innerHTML = q.choices.map((c, i) =>
-    `<div class="modal-choice ${c === q.answer ? 'is-answer' : ''}">
-      <span class="modal-choice-letter">${letters[i]}</span>${c}
-      ${c === q.answer ? ' ✓' : ''}
-    </div>`
-  ).join('');
+  document.getElementById('modal-choices').innerHTML = q.choices.map((c, i) => {
+    const isCorrect = c === q.answer;
+    const isChosen  = chosen && c === chosen && !isCorrect;
+    let cls = 'modal-choice';
+    if (isCorrect) cls += ' is-answer';
+    if (isChosen)  cls += ' is-chosen-wrong';
+    const tag = isCorrect ? '<span class="modal-tag correct-tag">✓ Correct</span>'
+              : isChosen  ? '<span class="modal-tag wrong-tag">✗ Selected</span>'
+              : '';
+    return `<div class="${cls}">
+      <span class="modal-choice-letter">${letters[i]}</span>
+      <span style="flex:1">${c}</span>${tag}
+    </div>`;
+  }).join('');
+  // Show legend only if we have a chosen answer to display
+  document.getElementById('modal-legend').style.display = chosen ? 'flex' : 'none';
   document.getElementById('q-modal').classList.add('open');
 }
 function closeQModal(e) {
