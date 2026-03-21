@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Clarkson University — Campus Safety Quiz</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -634,6 +635,100 @@
     cursor: default;
   }
 
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    display: flex; align-items: center; justify-content: center;
+    padding: 1.5rem;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.75rem;
+    max-width: 560px;
+    width: 100%;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    transform: translateY(12px);
+    transition: transform 0.2s;
+  }
+  .modal-overlay.open .modal-box { transform: translateY(0); }
+  .modal-q-id {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--gold);
+    margin-bottom: 0.5rem;
+  }
+  .modal-q-text {
+    font-size: 1.05rem; font-weight: 600; line-height: 1.5;
+    margin-bottom: 1.25rem; color: var(--text);
+  }
+  .modal-choices { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem; }
+  .modal-choice {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 0.65rem 0.9rem;
+    font-size: 0.9rem; display: flex; align-items: center; gap: 0.65rem;
+  }
+  .modal-choice.is-answer {
+    border-color: var(--correct); background: var(--correct-bg);
+    color: #4ade80; font-weight: 600;
+  }
+  .modal-choice-letter {
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+    font-size: 0.75rem; color: var(--muted);
+    background: var(--dark); border: 1px solid var(--border);
+    border-radius: 3px; min-width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .modal-choice.is-answer .modal-choice-letter { background: var(--correct); color: #fff; border-color: var(--correct); }
+  .modal-close {
+    width: 100%; background: transparent; border: 1px solid var(--border);
+    color: var(--muted); border-radius: 8px; padding: 0.65rem;
+    font-family: 'Barlow Condensed', sans-serif; font-size: 0.9rem;
+    font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .modal-close:hover { border-color: var(--green); color: var(--text); }
+
+  /* ── CHARTS ── */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1rem;
+  }
+  .chart-card.full-width {
+    grid-column: 1 / -1;
+  }
+  .chart-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.75rem; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 0.85rem;
+  }
+  .chart-canvas-wrap { position: relative; height: 180px; }
+  .chart-canvas-wrap.tall { height: 220px; }
+  .clickable-q {
+    cursor: pointer;
+    text-decoration: underline dotted rgba(200,169,81,0.4);
+    text-underline-offset: 3px;
+    transition: color 0.15s;
+  }
+  .clickable-q:hover { color: var(--gold); }
+
   footer {
     text-align: center;
     padding: 1rem;
@@ -731,6 +826,20 @@
             <div class="stat-card"><div class="s-num" id="stat-pass">—</div><div class="s-lbl">Pass Rate</div></div>
             <div class="stat-card"><div class="s-num" id="stat-unique">—</div><div class="s-lbl">Unique Officers</div></div>
           </div>
+          <div class="charts-grid">
+            <div class="chart-card">
+              <div class="chart-title">🏆 Leaderboard — Avg Score by Officer</div>
+              <div class="chart-canvas-wrap"><canvas id="chart-leaderboard"></canvas></div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-title">📊 Attempts per Officer</div>
+              <div class="chart-canvas-wrap"><canvas id="chart-attempts"></canvas></div>
+            </div>
+            <div class="chart-card full-width">
+              <div class="chart-title">❌ Most Missed by Category</div>
+              <div class="chart-canvas-wrap tall"><canvas id="chart-category"></canvas></div>
+            </div>
+          </div>
           <div class="table-wrap" id="recent-table-wrap">
             <div class="empty-state"><div class="big">📭</div><p>No data yet. Connect Google Sheets to see attempts.</p></div>
           </div>
@@ -811,6 +920,17 @@ function doGet(e) {
       </div><!-- /admin-main -->
     </div><!-- /admin-layout -->
   </div><!-- /admin-screen -->
+
+
+<!-- ── QUESTION MODAL ── -->
+<div class="modal-overlay" id="q-modal" onclick="closeQModal(event)">
+  <div class="modal-box">
+    <div class="modal-q-id" id="modal-qid"></div>
+    <div class="modal-q-text" id="modal-qtext"></div>
+    <div class="modal-choices" id="modal-choices"></div>
+    <button class="modal-close" onclick="closeQModal()">Close</button>
+  </div>
+</div>
 
 </main>
 
@@ -1106,7 +1226,128 @@ function renderDashboard() {
   document.getElementById('stat-unique').textContent = unique || '—';
   renderAttemptsTable(sheetData);
   renderMissedTable(sheetData);
+  renderCharts(sheetData);
   document.getElementById('attempts-meta').textContent = total + ' total attempt' + (total!==1?'s':'');
+}
+
+// ─── CHARTS ───────────────────────────────────────────────────────────────────
+const chartInstances = {};
+function destroyChart(id) { if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; } }
+
+function renderCharts(data) {
+  if (!data.length) return;
+
+  const COLORS = {
+    gold: '#C8A951', green: '#006747', wrong: '#da3633',
+    blue: '#388bfd', purple: '#c084fc', muted: '#8b949e'
+  };
+
+  // ── Leaderboard: avg score per officer ──
+  const scoreByOfficer = {};
+  const countByOfficer = {};
+  data.forEach(r => {
+    const key = r.officer || '?';
+    const pct = parseFloat(r.percent);
+    if (isNaN(pct)) return;
+    scoreByOfficer[key] = (scoreByOfficer[key] || 0) + (pct <= 1 ? pct * 100 : pct);
+    countByOfficer[key] = (countByOfficer[key] || 0) + 1;
+  });
+  const avgScores = Object.keys(scoreByOfficer).map(k => ({
+    name: k, avg: Math.round(scoreByOfficer[k] / countByOfficer[k])
+  })).sort((a,b) => b.avg - a.avg).slice(0, 10);
+
+  destroyChart('leaderboard');
+  const lb = document.getElementById('chart-leaderboard');
+  if (lb) {
+    chartInstances['leaderboard'] = new Chart(lb, {
+      type: 'bar',
+      data: {
+        labels: avgScores.map(o => o.name),
+        datasets: [{
+          data: avgScores.map(o => o.avg),
+          backgroundColor: avgScores.map(o => o.avg >= 70 ? '#006747cc' : '#da3633cc'),
+          borderColor: avgScores.map(o => o.avg >= 70 ? COLORS.green : COLORS.wrong),
+          borderWidth: 1, borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ctx.parsed.y + '%' } } },
+        scales: {
+          x: { ticks: { color: '#8b949e', font: { family: 'Barlow Condensed', size: 11 } }, grid: { color: '#2a3341' } },
+          y: { min: 0, max: 100, ticks: { color: '#8b949e', callback: v => v+'%', font: { size: 10 } }, grid: { color: '#2a334166' } }
+        }
+      }
+    });
+  }
+
+  // ── Attempts per officer ──
+  const attemptsArr = Object.keys(countByOfficer).map(k => ({ name: k, count: countByOfficer[k] }))
+    .sort((a,b) => b.count - a.count).slice(0, 10);
+  const palette = ['#C8A951','#388bfd','#c084fc','#4ade80','#ff7b72','#79c0ff','#fbbf24','#34d399','#f472b6','#a78bfa'];
+
+  destroyChart('attempts');
+  const at = document.getElementById('chart-attempts');
+  if (at) {
+    chartInstances['attempts'] = new Chart(at, {
+      type: 'doughnut',
+      data: {
+        labels: attemptsArr.map(o => o.name),
+        datasets: [{ data: attemptsArr.map(o => o.count), backgroundColor: palette, borderColor: '#161b22', borderWidth: 2 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'right', labels: { color: '#e6edf3', font: { family: 'Barlow', size: 11 }, boxWidth: 12, padding: 8 } }
+        }
+      }
+    });
+  }
+
+  // ── Most missed by category ──
+  const catCounts = { address: 0, keys: 0, procedure: 0, protocol: 0, contacts: 0 };
+  const catLabels = { address: 'Addresses', keys: 'Key System', procedure: 'Procedures', protocol: 'Protocols', contacts: 'Contacts' };
+  const qCatMap = {};
+  ALL_QUESTIONS.forEach(q => { qCatMap[q.id] = q.category; });
+
+  data.forEach(r => {
+    if (!r.wrongQuestions) return;
+    const sep = r.wrongQuestions.includes(',') ? ',' : '|';
+    r.wrongQuestions.split(sep).forEach(raw => {
+      const key = raw.trim();
+      const cat = qCatMap[key];
+      if (cat && catCounts[cat] !== undefined) catCounts[cat]++;
+    });
+  });
+
+  const catKeys = Object.keys(catCounts);
+  const catColors = ['#C8A951cc','#388bfdcc','#ff7b72cc','#4ade80cc','#c084fccc'];
+  const catBorder = ['#C8A951','#388bfd','#ff7b72','#4ade80','#c084fc'];
+
+  destroyChart('category');
+  const cc = document.getElementById('chart-category');
+  if (cc) {
+    chartInstances['category'] = new Chart(cc, {
+      type: 'bar',
+      data: {
+        labels: catKeys.map(k => catLabels[k]),
+        datasets: [{
+          label: 'Times Missed',
+          data: catKeys.map(k => catCounts[k]),
+          backgroundColor: catColors, borderColor: catBorder, borderWidth: 1, borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#8b949e', font: { size: 10 } }, grid: { color: '#2a334166' } },
+          y: { ticks: { color: '#e6edf3', font: { family: 'Barlow Condensed', size: 12 } }, grid: { display: false } }
+        }
+      }
+    });
+  }
 }
 
 function renderAttemptsTable(data) {
@@ -1184,8 +1425,8 @@ function renderMissedTable(data) {
         return `<span class="off-dot" style="background:${color}22;border-color:${color}55;color:${color}" title="${roster ? roster.name : name}">${initials}</span>`;
       }).join('');
       return `<tr>
-        <td><span class="q-id-badge">${displayId}</span></td>
-        <td style="font-size:0.82rem;line-height:1.4;color:var(--text)">${shortLabel}</td>
+        <td><span class="q-id-badge clickable-q" onclick="openQModal('${displayId}')">${displayId}</span></td>
+        <td style="font-size:0.82rem;line-height:1.4"><span class="clickable-q" onclick="openQModal('${displayId}')">${shortLabel}</span></td>
         <td style="white-space:nowrap">${dots}</td>
         <td><div class="missed-bar-wrap">
           <div class="missed-bar-bg"><div class="missed-bar-fill" style="width:${c/max*100}%"></div></div>
@@ -1227,7 +1468,7 @@ function fmtWrongIds(wrongQs) {
   const ids = wrongQs.split(sep).map(s => s.trim()).filter(Boolean);
   const labelMap = {};
   ALL_QUESTIONS.forEach(q => { labelMap[q.id] = q.label || ''; });
-  return ids.map(id => `<span class="q-id-badge" title="${labelMap[id] || id}">${id}</span>`).join(' ');
+  return ids.map(id => `<span class="q-id-badge clickable-q" title="${labelMap[id] || id}" onclick="openQModal('${id}')">${id}</span>`).join(' ');
 }
 
 function fmtDate(ts) {
@@ -1235,6 +1476,27 @@ function fmtDate(ts) {
   try { const d=new Date(ts); return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); }
   catch { return ts; }
 }
+
+// ─── QUESTION MODAL ──────────────────────────────────────────────────────────
+function openQModal(qid) {
+  const q = ALL_QUESTIONS.find(x => x.id === qid);
+  if (!q) return;
+  document.getElementById('modal-qid').textContent = q.id + ' — ' + q.categoryLabel;
+  document.getElementById('modal-qtext').textContent = q.q;
+  const letters = ['A','B','C','D'];
+  document.getElementById('modal-choices').innerHTML = q.choices.map((c, i) =>
+    `<div class="modal-choice ${c === q.answer ? 'is-answer' : ''}">
+      <span class="modal-choice-letter">${letters[i]}</span>${c}
+      ${c === q.answer ? ' ✓' : ''}
+    </div>`
+  ).join('');
+  document.getElementById('q-modal').classList.add('open');
+}
+function closeQModal(e) {
+  if (e && e.target !== document.getElementById('q-modal')) return;
+  document.getElementById('q-modal').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.getElementById('q-modal').classList.remove('open'); });
 
 function show(id) {
   const el = document.getElementById(id);
